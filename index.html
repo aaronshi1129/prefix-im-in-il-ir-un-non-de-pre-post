@@ -1,0 +1,1486 @@
+<html><head><base href="https://">
+<style>
+:root {
+  --primary: #2b87d1;
+  --secondary: #34495e;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.game-container {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  margin: 2rem;
+  max-width: 600px;
+  width: 90%;
+}
+
+.word-display {
+  font-size: 2rem;
+  color: var(--primary);
+  text-align: center;
+  margin: 1rem 0;
+  min-height: 3rem;
+}
+
+.question {
+  font-size: 1.2rem;
+  color: var(--secondary);
+  text-align: center;
+  margin: 1rem 0;
+  min-height: 4rem;
+}
+
+.answer-input {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.button-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background: #1a6cb3;
+}
+
+button.skip {
+  background: var(--secondary);
+}
+
+button.skip:hover {
+  background: #2c3e50;
+}
+
+.new-challenge {
+  margin-top: 1rem;
+  background: #27ae60 !important; /* Green color to differentiate it */
+}
+
+.new-challenge:hover {
+  background: #219a52 !important;
+}
+
+.score {
+  font-size: 1.2rem;
+  color: var(--secondary);
+  text-align: center;
+}
+
+.feedback {
+  text-align: center;
+  min-height: 2rem;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.correct { color: #27ae60; }
+.incorrect { color: #e74c3c; }
+
+.celebration-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.celebration-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.celebration-content img {
+  max-width: 200px;
+  margin: 1rem 0;
+}
+</style>
+</head>
+<body>
+<div class="game-container">
+  <h1>Word Family Challenge</h1>
+  <h2>(im-, in-, il-, ir-, un-, non-, pre-, post-)</h2>
+  <p class="subtitle">Complete this challenge successfully and earn a Pokemon!</p>
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="word-display" id="word"></div>
+  <div class="question" id="question"></div>
+  <input type="text" class="answer-input" id="answer" placeholder="Type your answer here">
+  <div class="button-container">
+    <button onclick="checkAnswer()">Submit Answer</button>
+    <button onclick="skipWord()" class="skip">Skip this word</button>
+  </div>
+  <button onclick="startNewChallenge()" class="new-challenge">Start a New Challenge</button>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<div class="celebration-modal" id="celebrationModal">
+  <div class="celebration-content">
+    <h2>Congratulations!</h2>
+    <p>You've correctly answered 10 questions! You've won this Pokemon!</p>
+    <div id="pokemonImage"></div>
+    <button onclick="closeCelebration()">Continue Playing</button>
+  </div>
+</div>
+
+<script>
+const wordFamilies = [
+  {
+    "baseWord": "possible",
+    "question": "What adjective is formed by adding a prefix to the word 'possible' and has the opposite meaning?",
+    "correct": ["impossible"]
+  },
+  {
+    "baseWord": "mortal",
+    "question": "What adjective is formed by adding a prefix to the word 'mortal' and has the opposite meaning?",
+    "correct": ["immortal"]
+  },
+  {
+    "baseWord": "patient",
+    "question": "What adjective is formed by adding a prefix to the word 'patient' and has the opposite meaning?",
+    "correct": ["impatient"]
+  },
+  {
+    "baseWord": "proper",
+    "question": "What adjective is formed by adding a prefix to the word 'proper' and has the opposite meaning?",
+    "correct": ["improper"]
+  },
+  {
+    "baseWord": "polite",
+    "question": "What adjective is formed by adding a prefix to the word 'polite' and has the opposite meaning?",
+    "correct": ["impolite"]
+  },
+  {
+    "baseWord": "pure",
+    "question": "What adjective is formed by adding a prefix to the word 'pure' and has the opposite meaning?",
+    "correct": ["impure"]
+  },
+  {
+    "baseWord": "perfect",
+    "question": "What adjective is formed by adding a prefix to the word 'perfect' and has the opposite meaning?",
+    "correct": ["imperfect"]
+  },
+  {
+    "baseWord": "personal",
+    "question": "What adjective is formed by adding a prefix to the word 'personal' and has the opposite meaning?",
+    "correct": ["impersonal"]
+  },
+  {
+    "baseWord": "practical",
+    "question": "What adjective is formed by adding a prefix to the word 'practical' and has the opposite meaning?",
+    "correct": ["impractical"]
+  },
+  {
+    "baseWord": "movable",
+    "question": "What adjective is formed by adding a prefix to the word 'movable' and has the opposite meaning?",
+    "correct": ["immovable"]
+  },
+  {
+    "baseWord": "mobile",
+    "question": "What adjective is formed by adding a prefix to the word 'mobile' and has the opposite meaning?",
+    "correct": ["immobile"]
+  },
+  {
+    "baseWord": "material",
+    "question": "What adjective is formed by adding a prefix to the word 'material' and has the opposite meaning?",
+    "correct": ["immaterial"]
+  },
+  {
+    "baseWord": "mature",
+    "question": "What adjective is formed by adding a prefix to the word 'mature' and has the opposite meaning?",
+    "correct": ["immature"]
+  },
+  {
+    "baseWord": "moral",
+    "question": "What adjective is formed by adding a prefix to the word 'moral' and has the opposite meaning?",
+    "correct": ["immoral"]
+  },
+  {
+    "baseWord": "modest",
+    "question": "What adjective is formed by adding a prefix to the word 'modest' and has the opposite meaning?",
+    "correct": ["immodest"]
+  },
+  {
+    "baseWord": "mature",
+    "question": "What adjective is formed by adding a prefix to the word 'mature' and has the opposite meaning?",
+    "correct": ["immature"]
+  },
+  {
+    "baseWord": "partial",
+    "question": "What adjective is formed by adding a prefix to the word 'partial' and has the opposite meaning?",
+    "correct": ["impartial"]
+  },
+  {
+    "baseWord": "perfect",
+    "question": "What adjective is formed by adding a prefix to the word 'perfect' and has the opposite meaning?",
+    "correct": ["imperfect"]
+  },
+  {
+    "baseWord": "plausible",
+    "question": "What adjective is formed by adding a prefix to the word 'plausible' and has the opposite meaning?",
+    "correct": ["implausible"]
+  },
+  {
+    "baseWord": "polite",
+    "question": "What adjective is formed by adding a prefix to the word 'polite' and has the opposite meaning?",
+    "correct": ["impolite"]
+  },
+  {
+    "baseWord": "proper",
+    "question": "What adjective is formed by adding a prefix to the word 'proper' and has the opposite meaning?",
+    "correct": ["improper"]
+  },
+  {
+    "baseWord": "probable",
+    "question": "What adjective is formed by adding a prefix to the word 'probable' and has the opposite meaning?",
+    "correct": ["improbable"]
+  },
+  {
+    "baseWord": "pure",
+    "question": "What adjective is formed by adding a prefix to the word 'pure' and has the opposite meaning?",
+    "correct": ["impure"]
+  },
+  {
+    "baseWord": "permanent",
+    "question": "What adjective is formed by adding a prefix to the word 'permanent' and has the opposite meaning?",
+    "correct": ["impermanent"]
+  },
+  {
+    "baseWord": "penetrable",
+    "question": "What adjective is formed by adding a prefix to the word 'penetrable' and has the opposite meaning?",
+    "correct": ["impenetrable"]
+  },
+  {
+    "baseWord": "plausible",
+    "question": "What adjective is formed by adding a prefix to the word 'plausible' and has the opposite meaning?",
+    "correct": ["implausible"]
+  },
+  {
+    "baseWord": "proper",
+    "question": "What adjective is formed by adding a prefix to the word 'proper' and has the opposite meaning?",
+    "correct": ["improper"]
+  },
+  {
+    "baseWord": "practical",
+    "question": "What adjective is formed by adding a prefix to the word 'practical' and has the opposite meaning?",
+    "correct": ["impractical"]
+  },
+  {
+    "baseWord": "passable",
+    "question": "What adjective is formed by adding a prefix to the word 'passable' and has the opposite meaning?",
+    "correct": ["impassable"]
+  },
+  {
+    "baseWord": "perceptible",
+    "question": "What adjective is formed by adding a prefix to the word 'perceptible' and has the opposite meaning?",
+    "correct": ["imperceptible"]
+  },
+  {
+    "baseWord": "personal",
+    "question": "What adjective is formed by adding a prefix to the word 'personal' and has the opposite meaning?",
+    "correct": ["impersonal"]
+  },
+  {
+    "baseWord": "pertinent",
+    "question": "What adjective is formed by adding a prefix to the word 'pertinent' and has the opposite meaning?",
+    "correct": ["impertinent"]
+  },
+  {
+    "baseWord": "pressible",
+    "question": "What adjective is formed by adding a prefix to the word 'pressible' and has the opposite meaning?",
+    "correct": ["impressible"]
+  },
+  {
+    "baseWord": "probable",
+    "question": "What adjective is formed by adding a prefix to the word 'probable' and has the opposite meaning?",
+    "correct": ["improbable"]
+  },
+  {
+    "baseWord": "proper",
+    "question": "What adjective is formed by adding a prefix to the word 'proper' and has the opposite meaning?",
+    "correct": ["improper"]
+  },
+  {
+    "baseWord": "happy",
+    "question": "What adjective is formed by adding a prefix to the word 'happy' and has the opposite meaning?",
+    "correct": ["unhappy"]
+  },
+  {
+    "baseWord": "fair",
+    "question": "What adjective is formed by adding a prefix to the word 'fair' and has the opposite meaning?",
+    "correct": ["unfair"]
+  },
+  {
+    "baseWord": "lucky",
+    "question": "What adjective is formed by adding a prefix to the word 'lucky' and has the opposite meaning?",
+    "correct": ["unlucky"]
+  },
+  {
+    "baseWord": "known",
+    "question": "What adjective is formed by adding a prefix to the word 'known' and has the opposite meaning?",
+    "correct": ["unknown"]
+  },
+  {
+    "baseWord": "certain",
+    "question": "What adjective is formed by adding a prefix to the word 'certain' and has the opposite meaning?",
+    "correct": ["uncertain"]
+  },
+  {
+    "baseWord": "able",
+    "question": "What adjective is formed by adding a prefix to the word 'able' and has the opposite meaning?",
+    "correct": ["unable"]
+  },
+  {
+    "baseWord": "necessary",
+    "question": "What adjective is formed by adding a prefix to the word 'necessary' and has the opposite meaning?",
+    "correct": ["unnecessary"]
+  },
+  {
+    "baseWord": "important",
+    "question": "What adjective is formed by adding a prefix to the word 'important' and has the opposite meaning?",
+    "correct": ["unimportant"]
+  },
+  {
+    "baseWord": "kind",
+    "question": "What adjective is formed by adding a prefix to the word 'kind' and has the opposite meaning?",
+    "correct": ["unkind"]
+  },
+  {
+    "baseWord": "friendly",
+    "question": "What adjective is formed by adding a prefix to the word 'friendly' and has the opposite meaning?",
+    "correct": ["unfriendly"]
+  },
+  {
+    "baseWord": "clear",
+    "question": "What adjective is formed by adding a prefix to the word 'clear' and has the opposite meaning?",
+    "correct": ["unclear"]
+  },
+  {
+    "baseWord": "pleasant",
+    "question": "What adjective is formed by adding a prefix to the word 'pleasant' and has the opposite meaning?",
+    "correct": ["unpleasant"]
+  },
+  {
+    "baseWord": "safe",
+    "question": "What adjective is formed by adding a prefix to the word 'safe' and has the opposite meaning?",
+    "correct": ["unsafe"]
+  },
+  {
+    "baseWord": "usual",
+    "question": "What adjective is formed by adding a prefix to the word 'usual' and has the opposite meaning?",
+    "correct": ["unusual"]
+  },
+  {
+    "baseWord": "real",
+    "question": "What adjective is formed by adding a prefix to the word 'real' and has the opposite meaning?",
+    "correct": ["unreal"]
+  },
+  {
+    "baseWord": "true",
+    "question": "What adjective is formed by adding a prefix to the word 'true' and has the opposite meaning?",
+    "correct": ["untrue"]
+  },
+  {
+    "baseWord": "tidy",
+    "question": "What adjective is formed by adding a prefix to the word 'tidy' and has the opposite meaning?",
+    "correct": ["untidy"]
+  },
+  {
+    "baseWord": "expected",
+    "question": "What adjective is formed by adding a prefix to the word 'expected' and has the opposite meaning?",
+    "correct": ["unexpected"]
+  },
+  {
+    "baseWord": "successful",
+    "question": "What adjective is formed by adding a prefix to the word 'successful' and has the opposite meaning?",
+    "correct": ["unsuccessful"]
+  },
+  {
+    "baseWord": "popular",
+    "question": "What adjective is formed by adding a prefix to the word 'popular' and has the opposite meaning?",
+    "correct": ["unpopular"]
+  },
+  {
+    "baseWord": "loved",
+    "question": "What adjective is formed by adding a prefix to the word 'loved' and has the opposite meaning?",
+    "correct": ["unloved"]
+  },
+  {
+    "baseWord": "broken",
+    "question": "What adjective is formed by adding a prefix to the word 'broken' and has the opposite meaning?",
+    "correct": ["unbroken"]
+  },
+  {
+    "baseWord": "finished",
+    "question": "What adjective is formed by adding a prefix to the word 'finished' and has the opposite meaning?",
+    "correct": ["unfinished"]
+  },
+  {
+    "baseWord": "locked",
+    "question": "What adjective is formed by adding a prefix to the word 'locked' and has the opposite meaning?",
+    "correct": ["unlocked"]
+  },
+  {
+    "baseWord": "fair",
+    "question": "What adjective is formed by adding a prefix to the word 'fair' and has the opposite meaning?",
+    "correct": ["unfair"]
+  },
+  {
+    "baseWord": "important",
+    "question": "What adjective is formed by adding a prefix to the word 'important' and has the opposite meaning?",
+    "correct": ["unimportant"]
+  },
+  {
+    "baseWord": "believable",
+    "question": "What adjective is formed by adding a prefix to the word 'believable' and has the opposite meaning?",
+    "correct": ["unbelievable"]
+  },
+  {
+    "baseWord": "comfortable",
+    "question": "What adjective is formed by adding a prefix to the word 'comfortable' and has the opposite meaning?",
+    "correct": ["uncomfortable"]
+  },
+  {
+    "baseWord": "available",
+    "question": "What adjective is formed by adding a prefix to the word 'available' and has the opposite meaning?",
+    "correct": ["unavailable"]
+  },
+  {
+    "baseWord": "willing",
+    "question": "What adjective is formed by adding a prefix to the word 'willing' and has the opposite meaning?",
+    "correct": ["unwilling"]
+  },
+  {
+    "baseWord": "stable",
+    "question": "What adjective is formed by adding a prefix to the word 'stable' and has the opposite meaning?",
+    "correct": ["unstable"]
+  },
+  {
+    "baseWord": "forgivable",
+    "question": "What adjective is formed by adding a prefix to the word 'forgivable' and has the opposite meaning?",
+    "correct": ["unforgivable"]
+  },
+  {
+    "baseWord": "reliable",
+    "question": "What adjective is formed by adding a prefix to the word 'reliable' and has the opposite meaning?",
+    "correct": ["unreliable"]
+  },
+  {
+    "baseWord": "educated",
+    "question": "What adjective is formed by adding a prefix to the word 'educated' and has the opposite meaning?",
+    "correct": ["uneducated"]
+  },
+  {
+    "baseWord": "successful",
+    "question": "What adjective is formed by adding a prefix to the word 'successful' and has the opposite meaning?",
+    "correct": ["unsuccessful"]
+  },
+  {
+    "baseWord": "affected",
+    "question": "What adjective is formed by adding a prefix to the word 'affected' and has the opposite meaning?",
+    "correct": ["unaffected"]
+  },
+  {
+    "baseWord": "lawful",
+    "question": "What adjective is formed by adding a prefix to the word 'lawful' and has the opposite meaning?",
+    "correct": ["unlawful"]
+  },
+  {
+    "baseWord": "fiction",
+    "question": "What noun is formed by adding a prefix to the word 'fiction' to mean something that is not fictional?",
+    "correct": ["nonfiction", "non-fiction"]
+  },
+  {
+    "baseWord": "sense",
+    "question": "What noun is formed by adding a prefix to the word 'sense' to mean something that lacks logic?",
+    "correct": ["nonsense", "non-sense"]
+  },
+  {
+    "baseWord": "verbal",
+    "question": "What adjective is formed by adding a prefix to the word 'verbal' to mean something not spoken?",
+    "correct": ["nonverbal", "non-verbal"]
+  },
+  {
+    "baseWord": "stop",
+    "question": "What adjective is formed by adding a prefix to the word 'stop' to describe something that does not stop?",
+    "correct": ["nonstop", "non-stop"]
+  },
+  {
+    "baseWord": "toxic",
+    "question": "What adjective is formed by adding a prefix to the word 'toxic' to mean something that is not toxic?",
+    "correct": ["nontoxic", "non-toxic"]
+  },
+  {
+    "baseWord": "existent",
+    "question": "What adjective is formed by adding a prefix to the word 'existent' to mean something that does not exist?",
+    "correct": ["nonexistent", "non-existent"]
+  },
+  {
+    "baseWord": "profit",
+    "question": "What adjective is formed by adding a prefix to the word 'profit' to mean an organization that does not seek profits?",
+    "correct": ["nonprofit", "non-profit"]
+  },
+  {
+    "baseWord": "essential",
+    "question": "What adjective is formed by adding a prefix to the word 'essential' to mean something that is not necessary?",
+    "correct": ["nonessential", "non-essential"]
+  },
+  {
+    "baseWord": "violent",
+    "question": "What adjective is formed by adding a prefix to the word 'violent' to mean something that does not involve violence?",
+    "correct": ["nonviolent", "non-violent"]
+  },
+  {
+    "baseWord": "resident",
+    "question": "What noun is formed by adding a prefix to the word 'resident' to mean a person who does not live in a place?",
+    "correct": ["nonresident", "non-resident"]
+  },
+  {
+    "baseWord": "renewable",
+    "question": "What adjective is formed by adding a prefix to the word 'renewable' to mean something that cannot be renewed?",
+    "correct": ["nonrenewable", "non-renewable"]
+  },
+  {
+    "baseWord": "human",
+    "question": "What adjective is formed by adding a prefix to the word 'human' to describe something that is not human?",
+    "correct": ["nonhuman", "non-human"]
+  },
+  {
+    "baseWord": "smoker",
+    "question": "What noun is formed by adding a prefix to the word 'smoker' to describe someone who does not smoke?",
+    "correct": ["nonsmoker", "non-smoker"]
+  },
+  {
+    "baseWord": "metal",
+    "question": "What adjective is formed by adding a prefix to the word 'metal' to mean something that is not made of metal?",
+    "correct": ["nonmetal", "non-metal"]
+  },
+  {
+    "baseWord": "academic",
+    "question": "What adjective is formed by adding a prefix to the word 'academic' to mean something unrelated to academics?",
+    "correct": ["nonacademic", "non-academic"]
+  },
+  {
+    "baseWord": "partisan",
+    "question": "What adjective is formed by adding a prefix to the word 'partisan' to describe someone who is neutral?",
+    "correct": ["nonpartisan", "non-partisan"]
+  },
+  {
+    "baseWord": "alcoholic",
+    "question": "What adjective is formed by adding a prefix to the word 'alcoholic' to describe a drink without alcohol?",
+    "correct": ["nonalcoholic", "non-alcoholic"]
+  },
+  {
+    "baseWord": "fat",
+    "question": "What adjective is formed by adding a prefix to the word 'fat' to describe food that does not contain fat?",
+    "correct": ["nonfat", "non-fat"]
+  },
+  {
+    "baseWord": "cooperation",
+    "question": "What adjective is formed by adding a prefix to the word 'cooperation' to mean a lack of cooperation?",
+    "correct": ["noncooperation", "non-cooperation"]
+  },
+  {
+    "baseWord": "flammable",
+    "question": "What adjective is formed by adding a prefix to the word 'flammable' to mean something that does not catch fire easily?",
+    "correct": ["nonflammable", "non-flammable"]
+  },
+  {
+    "baseWord": "resident",
+    "question": "What noun is formed by adding a prefix to the word 'resident' to mean someone who does not permanently live in a place?",
+    "correct": ["nonresident", "non-resident"]
+  },
+  {
+    "baseWord": "conformist",
+    "question": "What noun is formed by adding a prefix to the word 'conformist' to describe someone who does not follow social norms?",
+    "correct": ["nonconformist", "non-conformist"]
+  },
+  {
+    "baseWord": "returnable",
+    "question": "What adjective is formed by adding a prefix to the word 'returnable' to mean something that cannot be returned?",
+    "correct": ["nonreturnable", "non-returnable"]
+  },
+  {
+    "baseWord": "negotiable",
+    "question": "What adjective is formed by adding a prefix to the word 'negotiable' to describe something that cannot be negotiated?",
+    "correct": ["nonnegotiable", "non-negotiable"]
+  },
+  {
+    "baseWord": "verbal",
+    "question": "What adjective is formed by adding a prefix to the word 'verbal' to mean something that does not use words?",
+    "correct": ["nonverbal", "non-verbal"]
+  },
+  {
+    "baseWord": "judgmental",
+    "question": "What adjective is formed by adding a prefix to the word 'judgmental' to mean someone who does not make judgments?",
+    "correct": ["nonjudgmental", "non-judgmental"]
+  },
+  {
+    "baseWord": "competitive",
+    "question": "What adjective is formed by adding a prefix to the word 'competitive' to mean something that does not involve competition?",
+    "correct": ["noncompetitive", "non-competitive"]
+  },
+  {
+    "baseWord": "view",
+    "question": "What noun is formed by adding a prefix to the word 'view' to mean a preliminary opinion?",
+    "correct": ["preview"]
+  },
+  {
+    "baseWord": "historic",
+    "question": "What adjective is formed by adding a prefix to the word 'historic' to mean something that happened before recorded history?",
+    "correct": ["prehistoric"]
+  },
+  {
+    "baseWord": "exist",
+    "question": "What verb is formed by adding a prefix to the word 'exist' to mean something that existed before?",
+    "correct": ["preexist", "pre-exist"]
+  },
+  {
+    "baseWord": "school",
+    "question": "What noun is formed by adding a prefix to the word 'school' to mean early childhood education?",
+    "correct": ["preschool", "pre-school"]
+  },
+  {
+    "baseWord": "determine",
+    "question": "What verb is formed by adding a prefix to the word 'determine' to mean making a decision beforehand?",
+    "correct": ["predetermine"]
+  },
+  {
+    "baseWord": "fix",
+    "question": "What verb is formed by adding a prefix to the word 'fix' to mean setting something beforehand?",
+    "correct": ["prefix"]
+  },
+  {
+    "baseWord": "judge",
+    "question": "What verb is formed by adding a prefix to the word 'judge' to mean forming an opinion before knowing all the facts?",
+    "correct": ["prejudge"]
+  },
+  {
+    "baseWord": "caution",
+    "question": "What noun is formed by adding a prefix to the word 'caution' to mean a warning given in advance?",
+    "correct": ["precaution"]
+  },
+  {
+    "baseWord": "heat",
+    "question": "What verb is formed by adding a prefix to the word 'heat' to mean warming something before use?",
+    "correct": ["preheat"]
+  },
+  {
+    "baseWord": "arrange",
+    "question": "What verb is formed by adding a prefix to the word 'arrange' to mean setting up in advance?",
+    "correct": ["prearrange", "pre-arrange"]
+  },
+  {
+    "baseWord": "meditate",
+    "question": "What verb is formed by adding a prefix to the word 'meditate' to mean thinking deeply before making a decision?",
+    "correct": ["premeditate"]
+  },
+  {
+    "baseWord": "dispose",
+    "question": "What adjective is formed by adding a prefix to the word 'dispose' to mean having an inclination in advance?",
+    "correct": ["predisposed"]
+  },
+  {
+    "baseWord": "approve",
+    "question": "What verb is formed by adding a prefix to the word 'approve' to mean giving permission in advance?",
+    "correct": ["preapprove", "pre-approve"]
+  },
+  {
+    "baseWord": "dominant",
+    "question": "What adjective is formed by adding a prefix to the word 'dominant' to mean something that came before and had power?",
+    "correct": ["predominant"]
+  },
+  {
+    "baseWord": "paid",
+    "question": "What adjective is formed by adding a prefix to the word 'paid' to mean a payment made in advance?",
+    "correct": ["prepaid", "pre-paid"]
+  },
+  {
+    "baseWord": "mature",
+    "question": "What adjective is formed by adding a prefix to the word 'mature' to mean acting older than one's age?",
+    "correct": ["premature"]
+  },
+  {
+    "baseWord": "war",
+    "question": "What adjective is formed by adding a prefix to the word 'war' to describe events that happened before a war?",
+    "correct": ["prewar", "pre-war"]
+  },
+  {
+    "baseWord": "conceive",
+    "question": "What noun is formed by adding a prefix to the word 'conceive' to mean an idea that comes before something is created?",
+    "correct": ["preconception"]
+  },
+  {
+    "baseWord": "dict",
+    "question": "What noun is formed by adding a prefix to the root 'dict' to mean a statement made before something happens?",
+    "correct": ["prediction"]
+  },
+  {
+    "baseWord": "occupy",
+    "question": "What noun is formed by adding a prefix to the word 'occupy' to mean something that came before the current occupation?",
+    "correct": ["preoccupation"]
+  },
+  {
+    "baseWord": "position",
+    "question": "What noun is formed by adding a prefix to the word 'position' to mean a ranking based on prior performance?",
+    "correct": ["preposition"]
+  },
+  {
+    "baseWord": "package",
+    "question": "What noun is formed by adding a prefix to the word 'package' to mean a product that is wrapped before being sold?",
+    "correct": ["prepackaged", "pre-packaged"]
+  },
+  {
+    "baseWord": "fabricate",
+    "question": "What verb is formed by adding a prefix to the word 'fabricate' to mean constructing something beforehand?",
+    "correct": ["prefabricate"]
+  },
+  {
+    "baseWord": "view",
+    "question": "What noun is formed by adding a prefix to the word 'view' to mean an earlier glimpse of something?",
+    "correct": ["preview"]
+  },
+  {
+    "baseWord": "script",
+    "question": "What noun is formed by adding a prefix to the word 'script' to mean written lines prepared in advance?",
+    "correct": ["prescript"]
+  },
+  {
+    "baseWord": "game",
+    "question": "What noun is formed by adding a prefix to the word 'game' to mean an event held before the main game?",
+    "correct": ["pregame", "pre-game"]
+  },
+  {
+    "baseWord": "dispose",
+    "question": "What noun is formed by adding a prefix to the word 'dispose' to mean a tendency formed beforehand?",
+    "correct": ["predisposition"]
+  },
+  {
+    "baseWord": "cursor",
+    "question": "What noun is formed by adding a prefix to the word 'cursor' to mean a note written before the main text?",
+    "correct": ["precursor"]
+  },
+  {
+    "baseWord": "record",
+    "question": "What noun is formed by adding a prefix to the word 'record' to mean information noted before the main event?",
+    "correct": ["prerecord", "pre-record"]
+  },
+  {
+    "baseWord": "literate",
+    "question": "What adjective is formed by adding a prefix to the word 'literate' to describe someone who learned to read early?",
+    "correct": ["preliterate"]
+  },
+[
+  {
+    "baseWord": "war",
+    "question": "What adjective is formed by adding a prefix to the word 'war' to describe events that happen after a war?",
+    "correct": ["postwar", "post-war"]
+  },
+  {
+    "baseWord": "graduate",
+    "question": "What adjective is formed by adding a prefix to the word 'graduate' to describe education pursued after completing a degree?",
+    "correct": ["postgraduate", "post-graduate"]
+  },
+  {
+    "baseWord": "season",
+    "question": "What noun is formed by adding a prefix to the word 'season' to describe the period after the regular sports season?",
+    "correct": ["postseason", "post-season"]
+  },
+  {
+    "baseWord": "modern",
+    "question": "What adjective is formed by adding a prefix to the word 'modern' to describe something that comes after the modern era?",
+    "correct": ["postmodern", "post-modern"]
+  },
+  {
+    "baseWord": "script",
+    "question": "What noun is formed by adding a prefix to the word 'script' to describe something added after the main text?",
+    "correct": ["postscript"]
+  },
+  {
+    "baseWord": "operative",
+    "question": "What adjective is formed by adding a prefix to the word 'operative' to describe the period after a surgery?",
+    "correct": ["postoperative", "post-operative"]
+  },
+  {
+    "baseWord": "date",
+    "question": "What verb is formed by adding a prefix to the word 'date' to describe assigning a date after an event?",
+    "correct": ["postdate", "post-date"]
+  },
+  {
+    "baseWord": "colonial",
+    "question": "What adjective is formed by adding a prefix to the word 'colonial' to describe the period after colonial rule?",
+    "correct": ["postcolonial", "post-colonial"]
+  },
+  {
+    "baseWord": "mortem",
+    "question": "What noun is formed by adding a prefix to the word 'mortem' to describe an examination after death?",
+    "correct": ["postmortem", "post-mortem"]
+  },
+  {
+    "baseWord": "game",
+    "question": "What noun is formed by adding a prefix to the word 'game' to describe events or analysis occurring after a game?",
+    "correct": ["postgame", "post-game"]
+  },
+  {
+    "baseWord": "industrial",
+    "question": "What adjective is formed by adding a prefix to the word 'industrial' to describe the time after industrialization?",
+    "correct": ["postindustrial", "post-industrial"]
+  },
+  {
+    "baseWord": "trial",
+    "question": "What adjective is formed by adding a prefix to the word 'trial' to describe actions or events following a legal case?",
+    "correct": ["posttrial", "post-trial"]
+  },
+  {
+    "baseWord": "humous",
+    "question": "What adjective is formed by adding a prefix to the word 'humous' to describe something that happens after death?",
+    "correct": ["posthumous"]
+  },
+  {
+    "baseWord": "production",
+    "question": "What noun is formed by adding a prefix to the word 'production' to describe the phase after production is complete?",
+    "correct": ["postproduction", "post-production"]
+  },
+  {
+    "baseWord": "traumatic",
+    "question": "What adjective is formed by adding a prefix to the word 'traumatic' to describe stress occurring after a traumatic event?",
+    "correct": ["posttraumatic", "post-traumatic"]
+  },
+  {
+    "baseWord": "bellum",
+    "question": "What adjective is formed by adding a prefix to the Latin root 'bellum' to describe something occurring after a war?",
+    "correct": ["postbellum"]
+  },
+  {
+    "baseWord": "revolution",
+    "question": "What adjective is formed by adding a prefix to the word 'revolution' to describe events occurring after a revolution?",
+    "correct": ["postrevolutionary", "post-revolutionary"]
+  },
+  {
+    "baseWord": "menopause",
+    "question": "What adjective is formed by adding a prefix to the word 'menopause' to describe the phase after menopause?",
+    "correct": ["postmenopausal", "post-menopausal"]
+  },
+  {
+    "baseWord": "graduate",
+    "question": "What noun is formed by adding a prefix to the word 'graduate' to describe someone who has completed a degree?",
+    "correct": ["postgrad", "post-grad"]
+  },
+  {
+    "baseWord": "communist",
+    "question": "What adjective is formed by adding a prefix to the word 'communist' to describe a society after communism?",
+    "correct": ["postcommunist", "post-communist"]
+  },
+  {
+    "baseWord": "conflict",
+    "question": "What noun is formed by adding a prefix to the word 'conflict' to describe the period following a conflict?",
+    "correct": ["postconflict", "post-conflict"]
+  },
+  {
+    "baseWord": "apocalypse",
+    "question": "What adjective is formed by adding a prefix to the word 'apocalypse' to describe events occurring after an apocalypse?",
+    "correct": ["postapocalyptic", "post-apocalyptic"]
+  },
+  {
+    "baseWord": "truth",
+    "question": "What adjective is formed by adding a prefix to the word 'truth' to describe an era where objective facts are disregarded?",
+    "correct": ["posttruth", "post-truth"]
+  },
+  {
+    "baseWord": "marriage",
+    "question": "What noun is formed by adding a prefix to the word 'marriage' to describe issues occurring after a wedding?",
+    "correct": ["postmarriage", "post-marriage"]
+  },
+  {
+    "baseWord": "feminism",
+    "question": "What adjective is formed by adding a prefix to the word 'feminism' to describe an ideology that comes after feminism?",
+    "correct": ["postfeminist", "post-feminist"]
+  },
+  {
+    "baseWord": "capitalist",
+    "question": "What adjective is formed by adding a prefix to the word 'capitalist' to describe the phase after capitalism?",
+    "correct": ["postcapitalist", "post-capitalist"]
+  },
+  {
+    "baseWord": "electoral",
+    "question": "What adjective is formed by adding a prefix to the word 'electoral' to describe events occurring after an election?",
+    "correct": ["postelection", "post-election"]
+  },
+  {
+    "baseWord": "infection",
+    "question": "What noun is formed by adding a prefix to the word 'infection' to describe complications that arise after an infection?",
+    "correct": ["postinfection", "post-infection"]
+  },
+  {
+    "baseWord": "Cold War",
+    "question": "What noun is formed by adding a prefix to the word 'Cold War' to describe the period following the Cold War?",
+    "correct": ["post-Cold War"]
+  },
+  {
+    "baseWord": "activate",
+    "question": "What verb is formed by adding a prefix to the word 'activate' to mean to make something inactive?",
+    "correct": ["deactivate"]
+  },
+  {
+    "baseWord": "hydrate",
+    "question": "What verb is formed by adding a prefix to the word 'hydrate' to mean to remove water from something?",
+    "correct": ["dehydrate"]
+  },
+  {
+    "baseWord": "frost",
+    "question": "What verb is formed by adding a prefix to the word 'frost' to mean to remove frost from something?",
+    "correct": ["defrost"]
+  },
+  {
+    "baseWord": "compose",
+    "question": "What verb is formed by adding a prefix to the word 'compose' to mean to break down or decay?",
+    "correct": ["decompose"]
+  },
+  {
+    "baseWord": "code",
+    "question": "What verb is formed by adding a prefix to the word 'code' to mean to convert back into readable text?",
+    "correct": ["decode"]
+  },
+  {
+    "baseWord": "press",
+    "question": "What verb is formed by adding a prefix to the word 'press' to mean to remove pressure from something?",
+    "correct": ["depress"]
+  },
+  {
+    "baseWord": "centralize",
+    "question": "What verb is formed by adding a prefix to the word 'centralize' to mean to distribute power away from a central authority?",
+    "correct": ["decentralize"]
+  },
+  {
+    "baseWord": "clutter",
+    "question": "What verb is formed by adding a prefix to the word 'clutter' to mean to remove mess or unnecessary items?",
+    "correct": ["declutter"]
+  },
+  {
+    "baseWord": "motivate",
+    "question": "What verb is formed by adding a prefix to the word 'motivate' to mean to lower someone's enthusiasm?",
+    "correct": ["demotivate"]
+  },
+  {
+    "baseWord": "value",
+    "question": "What verb is formed by adding a prefix to the word 'value' to mean to reduce or lower the worth of something?",
+    "correct": ["devalue"]
+  },
+  {
+    "baseWord": "escalate",
+    "question": "What verb is formed by adding a prefix to the word 'escalate' to mean to decrease intensity or seriousness?",
+    "correct": ["deescalate", "de-escalate"]
+  },
+  {
+    "baseWord": "populate",
+    "question": "What verb is formed by adding a prefix to the word 'populate' to mean to reduce the number of people in an area?",
+    "correct": ["depopulate"]
+  },
+  {
+    "baseWord": "rail",
+    "question": "What verb is formed by adding a prefix to the word 'rail' to mean to remove rails or shut down a railway system?",
+    "correct": ["derail"]
+  },
+  {
+    "baseWord": "regulate",
+    "question": "What verb is formed by adding a prefix to the word 'regulate' to mean to remove or reduce government controls?",
+    "correct": ["deregulate"]
+  },
+  {
+    "baseWord": "form",
+    "question": "What verb is formed by adding a prefix to the word 'form' to mean to change the shape or structure of something?",
+    "correct": ["deform"]
+  },
+  {
+    "baseWord": "legitimize",
+    "question": "What verb is formed by adding a prefix to the word 'legitimize' to mean to remove legitimacy or credibility?",
+    "correct": ["delegitimize", "de-legitimize"]
+  },
+  {
+    "baseWord": "brief",
+    "question": "What verb is formed by adding a prefix to the word 'brief' to mean to provide less information or details?",
+    "correct": ["debrief"]
+  },
+  {
+    "baseWord": "contaminate",
+    "question": "What verb is formed by adding a prefix to the word 'contaminate' to mean to remove harmful substances?",
+    "correct": ["decontaminate"]
+  },
+  {
+    "baseWord": "fund",
+    "question": "What verb is formed by adding a prefix to the word 'fund' to mean to remove financial support?",
+    "correct": ["defund"]
+  },
+  {
+    "baseWord": "toxify",
+    "question": "What verb is formed by adding a prefix to the word 'toxify' to mean to remove toxic substances?",
+    "correct": ["detoxify"]
+  },
+  {
+    "baseWord": "scribe",
+    "question": "What verb is formed by adding a prefix to the word 'scribe' to mean to erase or remove writing?",
+    "correct": ["describe"]
+  },
+  {
+    "baseWord": "part",
+    "question": "What verb is formed by adding a prefix to the word 'part' to mean to remove a person from a role or job?",
+    "correct": ["depart"]
+  },
+  {
+    "baseWord": "serve",
+    "question": "What verb is formed by adding a prefix to the word 'serve' to mean to remove from service?",
+    "correct": ["deserve"]
+  },
+  {
+    "baseWord": "light",
+    "question": "What verb is formed by adding a prefix to the word 'light' to mean to reduce the brightness of something?",
+    "correct": ["delight"]
+  },
+  {
+    "baseWord": "vote",
+    "question": "What verb is formed by adding a prefix to the word 'vote' to mean to remove someone from office?",
+    "correct": ["devote"]
+  },
+  {
+    "baseWord": "structure",
+    "question": "What verb is formed by adding a prefix to the word 'structure' to mean to take apart or dismantle?",
+    "correct": ["destructure"]
+  },
+  {
+    "baseWord": "limit",
+    "question": "What verb is formed by adding a prefix to the word 'limit' to mean to remove restrictions or boundaries?",
+    "correct": ["delimit"]
+  },
+  {
+    "baseWord": "pressurize",
+    "question": "What verb is formed by adding a prefix to the word 'pressurize' to mean to reduce or remove pressure?",
+    "correct": ["depressurize", "de-pressurize"]
+  },
+  {
+    "baseWord": "rank",
+    "question": "What verb is formed by adding a prefix to the word 'rank' to mean to remove a ranking or status?",
+    "correct": ["derank"]
+  },
+  {
+    "baseWord": "agree",
+    "question": "What verb is formed by adding a prefix to the word 'agree' to mean to not be in agreement?",
+    "correct": ["disagree"]
+  },
+  {
+    "baseWord": "appear",
+    "question": "What verb is formed by adding a prefix to the word 'appear' to mean to vanish?",
+    "correct": ["disappear"]
+  },
+  {
+    "baseWord": "approve",
+    "question": "What verb is formed by adding a prefix to the word 'approve' to mean to not give approval?",
+    "correct": ["disapprove"]
+  },
+  {
+    "baseWord": "connect",
+    "question": "What verb is formed by adding a prefix to the word 'connect' to mean to detach?",
+    "correct": ["disconnect"]
+  },
+  {
+    "baseWord": "honest",
+    "question": "What adjective is formed by adding a prefix to the word 'honest' to mean not truthful?",
+    "correct": ["dishonest"]
+  },
+  {
+    "baseWord": "like",
+    "question": "What verb is formed by adding a prefix to the word 'like' to mean to not find enjoyable?",
+    "correct": ["dislike"]
+  },
+  {
+    "baseWord": "order",
+    "question": "What noun is formed by adding a prefix to the word 'order' to mean chaos or confusion?",
+    "correct": ["disorder"]
+  },
+  {
+    "baseWord": "trust",
+    "question": "What verb is formed by adding a prefix to the word 'trust' to mean to not believe in someone's reliability?",
+    "correct": ["distrust"]
+  },
+  {
+    "baseWord": "comfort",
+    "question": "What noun is formed by adding a prefix to the word 'comfort' to mean distress or unease?",
+    "correct": ["discomfort"]
+  },
+  {
+    "baseWord": "advantage",
+    "question": "What noun is formed by adding a prefix to the word 'advantage' to mean an unfavorable situation?",
+    "correct": ["disadvantage"]
+  },
+  {
+    "baseWord": "obey",
+    "question": "What verb is formed by adding a prefix to the word 'obey' to mean to refuse to follow orders?",
+    "correct": ["disobey"]
+  },
+  {
+    "baseWord": "please",
+    "question": "What verb is formed by adding a prefix to the word 'please' to mean to make someone unhappy or annoyed?",
+    "correct": ["displease"]
+  },
+  {
+    "baseWord": "satisfied",
+    "question": "What adjective is formed by adding a prefix to the word 'satisfied' to mean unhappy with something?",
+    "correct": ["dissatisfied"]
+  },
+  {
+    "baseWord": "qualify",
+    "question": "What verb is formed by adding a prefix to the word 'qualify' to mean to remove someone's eligibility?",
+    "correct": ["disqualify"]
+  },
+  {
+    "baseWord": "belief",
+    "question": "What noun is formed by adding a prefix to the word 'belief' to mean a lack of faith?",
+    "correct": ["disbelief"]
+  },
+  {
+    "baseWord": "engage",
+    "question": "What verb is formed by adding a prefix to the word 'engage' to mean to detach or withdraw?",
+    "correct": ["disengage"]
+  },
+  {
+    "baseWord": "respect",
+    "question": "What verb is formed by adding a prefix to the word 'respect' to mean to show a lack of respect?",
+    "correct": ["disrespect"]
+  },
+  {
+    "baseWord": "allow",
+    "question": "What verb is formed by adding a prefix to the word 'allow' to mean to refuse permission?",
+    "correct": ["disallow"]
+  },
+  {
+    "baseWord": "loyal",
+    "question": "What adjective is formed by adding a prefix to the word 'loyal' to mean unfaithful?",
+    "correct": ["disloyal"]
+  },
+  {
+    "baseWord": "prove",
+    "question": "What verb is formed by adding a prefix to the word 'prove' to mean to show something is false?",
+    "correct": ["disprove"]
+  },
+  {
+    "baseWord": "appear",
+    "question": "What verb is formed by adding a prefix to the word 'appear' to mean to become invisible?",
+    "correct": ["disappear"]
+  },
+  {
+    "baseWord": "charge",
+    "question": "What verb is formed by adding a prefix to the word 'charge' to mean to remove an electrical charge?",
+    "correct": ["discharge"]
+  },
+  {
+    "baseWord": "arm",
+    "question": "What verb is formed by adding a prefix to the word 'arm' to mean to remove weapons?",
+    "correct": ["disarm"]
+  },
+  {
+    "baseWord": "agreeable",
+    "question": "What adjective is formed by adding a prefix to the word 'agreeable' to mean difficult or uncooperative?",
+    "correct": ["disagreeable"]
+  },
+  {
+    "baseWord": "interest",
+    "question": "What verb is formed by adding a prefix to the word 'interest' to mean to lose enthusiasm?",
+    "correct": ["disinterest"]
+  },
+  {
+    "baseWord": "function",
+    "question": "What verb is formed by adding a prefix to the word 'function' to mean to not work properly?",
+    "correct": ["dysfunction"]
+  },
+  {
+    "baseWord": "continue",
+    "question": "What verb is formed by adding a prefix to the word 'continue' to mean to stop an action?",
+    "correct": ["discontinue"]
+  },
+  {
+    "baseWord": "like",
+    "question": "What verb is formed by adding a prefix to the word 'like' to mean to not enjoy something?",
+    "correct": ["dislike"]
+  },
+  {
+    "baseWord": "satisfy",
+    "question": "What verb is formed by adding a prefix to the word 'satisfy' to mean to not meet expectations?",
+    "correct": ["dissatisfy"]
+  },
+  {
+    "baseWord": "legal",
+    "question": "What adjective is formed by adding a prefix to the word 'legal' to mean not allowed by law?",
+    "correct": ["illegal"]
+  },
+  {
+    "baseWord": "active",
+    "question": "What adjective is formed by adding a prefix to the word 'active' to mean not active?",
+    "correct": ["inactive"]
+  },
+  {
+    "baseWord": "regular",
+    "question": "What adjective is formed by adding a prefix to the word 'regular' to mean not regular?",
+    "correct": ["irregular"]
+  },
+  {
+    "baseWord": "rational",
+    "question": "What adjective is formed by adding a prefix to the word 'rational' to mean not rational?",
+    "correct": ["irrational"]
+  },
+  {
+    "baseWord": "logical",
+    "question": "What adjective is formed by adding a prefix to the word 'logical' to mean not logical?",
+    "correct": ["illogical"]
+  },
+  {
+    "baseWord": "relevant",
+    "question": "What adjective is formed by adding a prefix to the word 'relevant' to mean not relevant?",
+    "correct": ["irrelevant"]
+  },
+  {
+    "baseWord": "capable",
+    "question": "What adjective is formed by adding a prefix to the word 'capable' to mean not capable?",
+    "correct": ["incapable"]
+  },
+  {
+    "baseWord": "visible",
+    "question": "What adjective is formed by adding a prefix to the word 'visible' to mean not visible?",
+    "correct": ["invisible"]
+  },
+  {
+    "baseWord": "secure",
+    "question": "What adjective is formed by adding a prefix to the word 'secure' to mean not secure?",
+    "correct": ["insecure"]
+  },
+  {
+    "baseWord": "tolerant",
+    "question": "What adjective is formed by adding a prefix to the word 'tolerant' to mean not tolerant?",
+    "correct": ["intolerant"]
+  },
+  {
+    "baseWord": "consistent",
+    "question": "What adjective is formed by adding a prefix to the word 'consistent' to mean not consistent?",
+    "correct": ["inconsistent"]
+  },
+  {
+    "baseWord": "complete",
+    "question": "What adjective is formed by adding a prefix to the word 'complete' to mean not complete?",
+    "correct": ["incomplete"]
+  },
+  {
+    "baseWord": "logical",
+    "question": "What adjective is formed by adding a prefix to the word 'logical' to mean not logical?",
+    "correct": ["illogical"]
+  },
+  {
+    "baseWord": "direct",
+    "question": "What adjective is formed by adding a prefix to the word 'direct' to mean not direct?",
+    "correct": ["indirect"]
+  },
+  {
+    "baseWord": "responsible",
+    "question": "What adjective is formed by adding a prefix to the word 'responsible' to mean not responsible?",
+    "correct": ["irresponsible"]
+  },
+  {
+    "baseWord": "credible",
+    "question": "What adjective is formed by adding a prefix to the word 'credible' to mean not credible?",
+    "correct": ["incredible"]
+  },
+  {
+    "baseWord": "adaptable",
+    "question": "What adjective is formed by adding a prefix to the word 'adaptable' to mean not adaptable?",
+    "correct": ["inadaptable"]
+  },
+  {
+    "baseWord": "relevant",
+    "question": "What adjective is formed by adding a prefix to the word 'relevant' to mean not relevant?",
+    "correct": ["irrelevant"]
+  },
+  {
+    "baseWord": "valid",
+    "question": "What adjective is formed by adding a prefix to the word 'valid' to mean not valid?",
+    "correct": ["invalid"]
+  },
+  {
+    "baseWord": "symmetrical",
+    "question": "What adjective is formed by adding a prefix to the word 'symmetrical' to mean not symmetrical?",
+    "correct": ["asymmetrical"]
+  },
+  {
+    "baseWord": "logical",
+    "question": "What adjective is formed by adding a prefix to the word 'logical' to mean not logical?",
+    "correct": ["illogical"]
+  },
+  {
+    "baseWord": "sensible",
+    "question": "What adjective is formed by adding a prefix to the word 'sensible' to mean not sensible?",
+    "correct": ["insensible"]
+  },
+  {
+    "baseWord": "important",
+    "question": "What adjective is formed by adding a prefix to the word 'important' to mean not important?",
+    "correct": ["unimportant"]
+  },
+  {
+    "baseWord": "active",
+    "question": "What adjective is formed by adding a prefix to the word 'active' to mean not active?",
+    "correct": ["inactive"]
+  }
+];
+
+let currentWordIndex = 0;
+let score = 0;
+let correctAnswers = 0;
+
+async function showCelebration() {
+  const modal = document.getElementById('celebrationModal');
+  const pokemonId = Math.floor(Math.random() * 898) + 1;
+  const pokemonContainer = document.getElementById('pokemonImage');
+  
+  try {
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+    const data = await response.json();
+    const pokemonImage = document.createElement('img');
+    pokemonImage.src = data.sprites.other['official-artwork'].front_default;
+    pokemonImage.alt = `Pokemon ${data.name}`;
+    pokemonImage.width = 200;
+    pokemonImage.height = 200;
+    
+    pokemonContainer.innerHTML = '';
+    pokemonContainer.appendChild(pokemonImage);
+    modal.style.display = 'flex';
+  } catch (error) {
+    console.error('Error fetching Pokemon:', error);
+  }
+}
+
+function closeCelebration() {
+  const modal = document.getElementById('celebrationModal');
+  modal.style.display = 'none';
+}
+
+function displayWord() {
+  const wordDisplay = document.getElementById('word');
+  const questionDisplay = document.getElementById('question');
+  const answerInput = document.getElementById('answer');
+  
+  // Generate a random index instead of using currentWordIndex
+  currentWordIndex = Math.floor(Math.random() * wordFamilies.length);
+  const currentWord = wordFamilies[currentWordIndex];
+  
+  wordDisplay.textContent = currentWord.baseWord;
+  questionDisplay.textContent = currentWord.question;
+  answerInput.value = '';
+}
+
+function skipWord() {
+  const feedback = document.getElementById('feedback');
+  const currentWord = wordFamilies[currentWordIndex];
+  
+  feedback.textContent = `Skipped. The correct answer was '${currentWord.correct[0]}'`;
+  feedback.className = "feedback incorrect";
+  
+  setTimeout(() => {
+    // Generate a new random index instead of incrementing
+    currentWordIndex = Math.floor(Math.random() * wordFamilies.length);
+    feedback.textContent = "";
+    displayWord();
+  }, 2000);
+}
+
+function checkAnswer() {
+  const currentWord = wordFamilies[currentWordIndex];
+  const feedback = document.getElementById('feedback');
+  const scoreDisplay = document.getElementById('score');
+  const answerInput = document.getElementById('answer');
+  
+  const userAnswer = answerInput.value.trim().toLowerCase();
+  
+  if (currentWord.correct.includes(userAnswer)) {
+    score += 10;
+    correctAnswers++;
+    feedback.textContent = "Correct! Well done!";
+    feedback.className = "feedback correct";
+    
+    if (correctAnswers === 10) {
+      showCelebration();
+      correctAnswers = 0;
+    }
+  } else {
+    feedback.textContent = `Incorrect. The correct answer is '${currentWord.correct.join("' or '")}'`;
+    feedback.className = "feedback incorrect";
+  }
+  
+  scoreDisplay.textContent = score;
+  
+  setTimeout(() => {
+    // Generate a new random index instead of incrementing
+    currentWordIndex = Math.floor(Math.random() * wordFamilies.length);
+    feedback.textContent = "";
+    displayWord();
+  }, 2000);
+}
+
+function startNewChallenge() {
+  score = 0;
+  correctAnswers = 0;
+  const scoreDisplay = document.getElementById('score');
+  const feedback = document.getElementById('feedback');
+  
+  scoreDisplay.textContent = score;
+  feedback.textContent = "Starting a new challenge!";
+  feedback.className = "feedback";
+  
+  setTimeout(() => {
+    feedback.textContent = "";
+    displayWord();
+  }, 1500);
+}
+
+document.getElementById('answer').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    checkAnswer();
+  }
+});
+
+displayWord();
+</script>
+   <div class="footer">Author: Aaron Shi. Released in 2025.</div>
+</body></html>
